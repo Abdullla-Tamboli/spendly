@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import Input from '../components/ui/Input.jsx';
 import Button from '../components/ui/Button.jsx';
+import AuthLayout from '../components/layout/AuthLayout.jsx';
 
 const schema = z.object({
   name: z.string().trim().min(2, 'Name must be at least 2 characters').max(60),
@@ -38,11 +39,12 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-bg flex items-center justify-center p-4">
-      <div className="bg-surface border border-border rounded-card shadow-sm w-full max-w-sm p-8 space-y-6">
+    <AuthLayout>
+      <div className="w-full max-w-sm space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-primary">Spendly</h1>
-          <p className="text-sm text-text-secondary mt-1">Create your account</p>
+          <p className="eyebrow">A FRESH START</p>
+          <h1 className="text-3xl font-semibold tracking-tight mt-3">A little clarity goes a long way.</h1>
+          <p className="text-text-secondary mt-3">Create your account and start with your first transaction.</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
@@ -86,6 +88,6 @@ export default function Register() {
           </Link>
         </p>
       </div>
-    </div>
+    </AuthLayout>
   );
 }

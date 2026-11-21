@@ -18,8 +18,8 @@ import Settings from './pages/Settings.jsx';
 export default function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <ToastProvider>
+      <ToastProvider>
+        <AuthProvider>
           <Routes>
             <Route element={<PublicRoute />}>
               <Route path="/login" element={<Login />} />
@@ -39,8 +39,8 @@ export default function App() {
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-        </ToastProvider>
-      </AuthProvider>
+        </AuthProvider>
+      </ToastProvider>
     </BrowserRouter>
   );
 }

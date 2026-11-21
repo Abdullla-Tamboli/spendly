@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, useCallback, useId } from 'react';
+import { createContext, useContext, useReducer, useCallback } from 'react';
 
 const ToastContext = createContext(null);
 
@@ -26,11 +26,12 @@ export function ToastProvider({ children }) {
     <ToastContext.Provider value={{ toasts, toast }}>
       {children}
       {/* Toast container */}
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+      <div aria-live="polite" aria-atomic="false" className="fixed bottom-20 lg:bottom-6 right-4 left-4 sm:left-auto z-50 flex flex-col items-end gap-2 pointer-events-none">
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`pointer-events-auto px-4 py-3 rounded-btn shadow-lg text-sm font-medium text-white max-w-xs ${
+            role="status"
+            className={`pointer-events-auto px-4 py-3 rounded-btn border text-sm font-medium text-white max-w-sm ${
               t.type === 'error' ? 'bg-expense' : 'bg-income'
             }`}
           >

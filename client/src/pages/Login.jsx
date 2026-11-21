@@ -1,9 +1,9 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { useToast } from '../context/ToastContext.jsx';
+import AuthLayout from '../components/layout/AuthLayout.jsx';
 import Input from '../components/ui/Input.jsx';
 import Button from '../components/ui/Button.jsx';
 
@@ -14,7 +14,7 @@ const schema = z.object({
 
 export default function Login() {
   const { login } = useAuth();
-  const toast = useToast();
+  const location = useLocation();
   const navigate = useNavigate();
 
   const {
@@ -27,7 +27,8 @@ export default function Login() {
   const onSubmit = async (data) => {
     try {
       await login(data);
-      navigate('/', { replace: true });
+      const from = location.state?.from;
+      navigate(from ? from.pathname + (from.search || '') : '/', { replace: true });
     } catch (err) {
       const msg = err.response?.data?.error?.message || 'Login failed';
       setError('root', { message: msg });
@@ -35,11 +36,12 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-bg flex items-center justify-center p-4">
-      <div className="bg-surface border border-border rounded-card shadow-sm w-full max-w-sm p-8 space-y-6">
+    <AuthLayout>
+      <div className="w-full max-w-sm space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-primary">Spendly</h1>
-          <p className="text-sm text-text-secondary mt-1">Sign in to your account</p>
+          <p className="eyebrow">WELCOME BACK</p>
+          <h1 className="text-3xl font-semibold tracking-tight mt-3">Make room for what matters.</h1>
+          <p className="text-text-secondary mt-3">Sign in to see your money in one place.</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
@@ -76,6 +78,6 @@ export default function Login() {
           </Link>
         </p>
       </div>
-    </div>
+    </AuthLayout>
   );
 }
