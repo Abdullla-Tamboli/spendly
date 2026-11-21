@@ -35,15 +35,19 @@ export function AuthProvider({ children }) {
       dispatch({ type: 'CLEAR' });
       return;
     }
+    let active = true;
     authApi
       .getMe()
       .then((res) => {
+        if (!active || localStorage.getItem(TOKEN_KEY) !== token) return;
         dispatch({ type: 'SET_USER', user: res.data.data.user, token });
       })
       .catch(() => {
+        if (!active || localStorage.getItem(TOKEN_KEY) !== token) return;
         localStorage.removeItem(TOKEN_KEY);
         dispatch({ type: 'CLEAR' });
       });
+    return () => { active = false; };
   }, []);
 
   // Wire 401 interceptor to clear auth and redirect
@@ -54,7 +58,7 @@ export function AuthProvider({ children }) {
         const code = err.response?.data?.error?.code;
         if (
           err.response?.status === 401 &&
-          (code === 'TOKEN_EXPIRED' || code === 'INVALID_TOKEN')
+          (code === 'TOKEN_EXPIRED' || code === 'INVALID_TOKEN') && localStorage.getItem(TOKEN_KEY)
         ) {
           localStorage.removeItem(TOKEN_KEY);
           dispatch({ type: 'CLEAR' });

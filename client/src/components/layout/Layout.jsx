@@ -1,4 +1,6 @@
 import { Outlet } from 'react-router-dom';
+import { Suspense } from 'react';
+import PageSkeleton from '../ui/PageSkeleton.jsx';
 import Sidebar from './Sidebar.jsx';
 import TopBar from './TopBar.jsx';
 import BottomNav from './BottomNav.jsx';
@@ -13,7 +15,7 @@ export default function Layout() {
       <div className="flex-1 flex flex-col lg:ml-64 min-w-0">
         <TopBar />
         <main id="main-content" className="flex-1 p-4 sm:p-6 lg:p-8 pb-24 lg:pb-8 min-w-0">
-          <Outlet />
+          <Suspense fallback={<PageSkeleton />}><Outlet /></Suspense>
         </main>
       </div>
 
