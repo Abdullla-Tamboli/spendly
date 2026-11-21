@@ -22,11 +22,11 @@ function nextOccurrence(fromDate, frequency) {
   }
 }
 
-const SORT_MAP = {
-  date_desc: { date: -1 },
-  date_asc: { date: 1 },
-  amount_desc: { amount: -1 },
-  amount_asc: { amount: 1 },
+export const SORT_MAP = {
+  date_desc: { date: -1, _id: -1 },
+  date_asc: { date: 1, _id: 1 },
+  amount_desc: { amount: -1, _id: -1 },
+  amount_asc: { amount: 1, _id: 1 },
 };
 
 /**
@@ -44,9 +44,9 @@ export function buildFilter(userId, params) {
       .map((c) => c.trim())
       .filter(Boolean);
     if (cats.length === 1) {
-      filter.category = { $regex: escapeRegex(cats[0]), $options: 'i' };
+      filter.category = { $regex: `^${escapeRegex(cats[0])}$`, $options: 'i' };
     } else if (cats.length > 1) {
-      filter.category = { $in: cats.map((c) => new RegExp(escapeRegex(c), 'i')) };
+      filter.category = { $in: cats.map((c) => new RegExp(`^${escapeRegex(c)}$`, 'i')) };
     }
   }
 
@@ -135,14 +135,14 @@ export async function createTransaction(userId, body) {
   if (!acc) throw new AppError('Account not found', 404, 'NOT_FOUND');
 
   // Validate category
-  await validateCategory(userId, type, category);
+  const canonicalCategory = await validateCategory(userId, type, category);
 
   const tx = await Transaction.create({
     user: userId,
     account,
     type,
     amount,
-    category,
+    category: canonicalCategory,
     note: note ?? '',
     date: date ?? new Date(),
   });
@@ -156,18 +156,18 @@ export async function createTransaction(userId, body) {
       account,
       type,
       amount,
-      category,
+      category: canonicalCategory,
       note: note ?? '',
       frequency: recurring.frequency,
       nextDate,
       endDate: recurring.endDate ?? undefined,
-      active: true,
+      active: !recurring.endDate || nextDate <= recurring.endDate,
     });
     // Link the rule back to the transaction
-    await Transaction.findByIdAndUpdate(tx._id, { recurringRule: rule._id });
+    await Transaction.findOneAndUpdate({ _id: tx._id, user: userId }, { recurringRule: rule._id });
   }
 
-  return Transaction.findById(tx._id).populate('account', '_id name type').lean();
+  return Transaction.findOne({ _id: tx._id, user: userId }).populate('account', '_id name type').lean();
 }
 
 export async function updateTransaction(userId, transactionId, updates) {
@@ -182,7 +182,7 @@ export async function updateTransaction(userId, transactionId, updates) {
 
   const newType = updates.type ?? existing.type;
   const newCategory = updates.category ?? existing.category;
-  await validateCategory(userId, newType, newCategory);
+  updates.category = await validateCategory(userId, newType, newCategory);
 
   const tx = await Transaction.findOneAndUpdate(
     { _id: transactionId, user: userId },

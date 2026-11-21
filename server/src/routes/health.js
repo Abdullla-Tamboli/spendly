@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { validate } from '../middleware/validate.js';
+import { attachmentsEnabled } from '../middleware/attachment.js';
 
 const router = Router();
 
@@ -10,6 +11,7 @@ router.get('/', validate(), (_req, res) => {
       status: 'ok',
       timestamp: new Date().toISOString(),
       service: 'spendly-api',
+      attachmentsEnabled,
     },
   });
 });

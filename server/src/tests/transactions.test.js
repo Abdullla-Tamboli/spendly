@@ -55,6 +55,21 @@ async function createTx(token, cashId, overrides = {}) {
 // ── CRUD ───────────────────────────────────────────────────────────────────
 
 describe('Transactions CRUD', () => {
+  it('rejects impossible dates, unordered filters and incomplete recurring settings', async () => {
+    const { token, cashId } = await setup();
+    for (const date of [null, '2026-02-30', 'not-a-date']) {
+      expect((await createTx(token, cashId, { date })).status).toBe(400);
+    }
+    expect((await createTx(token, cashId, { recurring: { enabled: true } })).status).toBe(400);
+    expect((await request(app).get('/api/v1/transactions?from=2026-07-02&to=2026-07-01').set(auth(token))).status).toBe(400);
+    expect((await request(app).get('/api/v1/transactions?minAmount=20&maxAmount=10').set(auth(token))).status).toBe(400);
+    expect((await request(app).get('/api/v1/transactions?unknown=true').set(auth(token))).status).toBe(400);
+    const tx = await createTx(token, cashId, { category: 'food' });
+    expect(tx.body.data.transaction.category).toBe('Food');
+    const attachment = await request(app).post(`/api/v1/transactions/${tx.body.data.transaction._id}/attachment`).set(auth(token));
+    expect(attachment.status).toBe(501);
+    expect(attachment.body.error.code).toBe('ATTACHMENTS_UNAVAILABLE');
+  });
   it('POST creates a transaction and returns populated account', async () => {
     const { token, cashId } = await setup();
     const res = await createTx(token, cashId);

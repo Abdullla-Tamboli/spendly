@@ -1,5 +1,11 @@
 import asyncHandler from '../utils/asyncHandler.js';
 import * as txService from '../services/transactions.js';
+import { attachFile } from '../services/attachments.js';
+
+export const attach = asyncHandler(async (req, res) => {
+  const transaction = await attachFile(req.user._id, req.params.id, req.file);
+  res.json({ success: true, data: { transaction } });
+});
 
 export const list = asyncHandler(async (req, res) => {
   const result = await txService.listTransactions(req.user._id, req.query);
