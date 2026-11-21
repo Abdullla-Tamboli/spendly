@@ -1,9 +1,11 @@
 import mongoose from 'mongoose';
 import Goal from '../models/Goal.js';
 import AppError from '../utils/AppError.js';
+import { roundMoney } from '../utils/dates.js';
 
 function withProgress(goal) {
   const obj = goal.toObject ? goal.toObject() : { ...goal };
+  obj.currentAmount = roundMoney(obj.currentAmount);
   obj.progress = goal.targetAmount > 0
     ? Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 100))
     : 0;
@@ -12,12 +14,7 @@ function withProgress(goal) {
 
 export async function listGoals(userId) {
   const goals = await Goal.find({ user: userId }).sort({ createdAt: -1 }).lean();
-  return goals.map((g) => ({
-    ...g,
-    progress: g.targetAmount > 0
-      ? Math.min(100, Math.round((g.currentAmount / g.targetAmount) * 100))
-      : 0,
-  }));
+  return goals.map(withProgress);
 }
 
 export async function createGoal(userId, data) {

@@ -12,7 +12,7 @@ import {
 const router = Router();
 router.use(authenticate);
 
-router.get('/', list);
+router.get('/', validate(), list);
 router.post('/', validate({ body: createGoalSchema }), create);
 router.put('/:id', validate({ body: updateGoalSchema, params: goalIdParamSchema }), update);
 router.patch(

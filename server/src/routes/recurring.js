@@ -7,7 +7,7 @@ import { patchRuleSchema, ruleIdParamSchema } from '../validators/recurring.js';
 const router = Router();
 router.use(authenticate);
 
-router.get('/', list);
+router.get('/', validate(), list);
 router.patch('/:id', validate({ body: patchRuleSchema, params: ruleIdParamSchema }), patch);
 router.delete('/:id', validate({ params: ruleIdParamSchema }), remove);
 

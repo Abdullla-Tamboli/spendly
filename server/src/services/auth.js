@@ -4,6 +4,7 @@ import User from '../models/User.js';
 import Account from '../models/Account.js';
 import env from '../config/env.js';
 import AppError from '../utils/AppError.js';
+import { checkRecurring } from './recurring.js';
 
 const SALT_ROUNDS = 12;
 
@@ -55,6 +56,8 @@ export async function loginUser({ email, password }) {
   if (!user || !isMatch) {
     throw new AppError('Invalid email or password', 401, 'INVALID_CREDENTIALS');
   }
+
+  await checkRecurring(user._id);
 
   const token = signToken(user._id);
   return { token, user: sanitizeUser(user) };

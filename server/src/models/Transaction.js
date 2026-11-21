@@ -56,5 +56,6 @@ transactionSchema.index({ user: 1, date: -1 });
 transactionSchema.index({ user: 1, type: 1, date: -1 });
 transactionSchema.index({ user: 1, category: 1, date: -1 });
 transactionSchema.index({ user: 1, account: 1, date: -1 });
+transactionSchema.index({ user: 1, recurringRule: 1, date: 1 }, { unique: true, partialFilterExpression: { recurringRule: { $type: 'objectId' } } });
 
 export default mongoose.model('Transaction', transactionSchema);

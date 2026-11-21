@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+process.env.TZ = 'UTC';
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().int().positive().default(5000),

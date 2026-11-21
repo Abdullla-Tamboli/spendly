@@ -230,6 +230,18 @@ describe('Recurring rule creation via transaction', () => {
 // RECURRING PROCESSOR
 // ═══════════════════════════════════════════════════════════════════════════
 describe('processDueRecurring', () => {
+  test('concurrent catch-up creates exactly one transaction per occurrence and retries safely', async () => {
+    const { userId, cashId } = await setup();
+    const nextDate = new Date();
+    nextDate.setUTCHours(0, 0, 0, 0);
+    nextDate.setUTCDate(nextDate.getUTCDate() - 3);
+    const rule = await RecurringRule.create({ user: userId, account: cashId, type: 'expense', amount: 10, category: 'Food', frequency: 'daily', nextDate });
+    await Transaction.init();
+    await Promise.all([processDueRecurring(userId), processDueRecurring(userId), processDueRecurring(userId)]);
+    await processDueRecurring(userId);
+    expect(await Transaction.countDocuments({ user: userId, recurringRule: rule._id })).toBe(4);
+    expect(await RecurringRule.countDocuments({ user: userId })).toBe(1);
+  });
   test('processes a daily rule and creates catch-up transactions', async () => {
     const { userId, cashId } = await setup();
     const userObjId = new mongoose.Types.ObjectId(userId);

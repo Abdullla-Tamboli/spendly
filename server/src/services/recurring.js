@@ -1,95 +1,62 @@
-import { addDays, addWeeks, addMonths, addYears, isAfter } from 'date-fns';
+import { addDays, addWeeks, addMonths, addYears } from 'date-fns';
 import mongoose from 'mongoose';
 import RecurringRule from '../models/RecurringRule.js';
 import Transaction from '../models/Transaction.js';
+import User from '../models/User.js';
 
-/**
- * Advance a date by one frequency step.
- */
-function advanceDate(date, frequency) {
-  switch (frequency) {
-    case 'daily':
-      return addDays(date, 1);
-    case 'weekly':
-      return addWeeks(date, 1);
-    case 'monthly':
-      return addMonths(date, 1);
-    case 'yearly':
-      return addYears(date, 1);
-    default:
-      return addMonths(date, 1);
+export function advanceDate(date, frequency) {
+  return { daily: addDays, weekly: addWeeks, monthly: addMonths, yearly: addYears }[frequency](date, 1);
+}
+
+export async function processDueRecurring(userId) {
+  const user = new mongoose.Types.ObjectId(userId);
+  const now = new Date();
+  const rules = await RecurringRule.find({ user, active: true, nextDate: { $lte: now } }).lean();
+  for (const rule of rules) {
+    for (let i = 0; i < 366 && rule.nextDate <= now; i++) {
+      if (rule.endDate && rule.nextDate > rule.endDate) {
+        await RecurringRule.updateOne({ _id: rule._id, user, nextDate: rule.nextDate }, { $set: { active: false } });
+        break;
+      }
+      const processingAt = new Date();
+      const claimed = await RecurringRule.findOneAndUpdate({
+        _id: rule._id, user, active: true, nextDate: rule.nextDate,
+        $or: [{ processingAt: null }, { processingAt: { $lt: new Date(Date.now() - 300000) } }],
+      }, { $set: { processingAt } }, { new: true });
+      if (!claimed) break;
+      const nextDate = advanceDate(claimed.nextDate, claimed.frequency);
+      try {
+        // Persist idempotently before advancing. A crash is safe to retry, and the
+        // unique occurrence index protects overlapping requests and stale locks.
+        await Transaction.updateOne({ user, recurringRule: claimed._id, date: claimed.nextDate }, { $setOnInsert: {
+          user, recurringRule: claimed._id, date: claimed.nextDate, account: claimed.account,
+          type: claimed.type, amount: claimed.amount, category: claimed.category, note: claimed.note || '',
+        } }, { upsert: true, runValidators: true });
+        await RecurringRule.updateOne({ _id: claimed._id, user, nextDate: claimed.nextDate, processingAt }, {
+          $set: { nextDate, ...(claimed.endDate && nextDate > claimed.endDate ? { active: false } : {}) },
+          $unset: { processingAt: 1 },
+        });
+      } catch (err) {
+        await RecurringRule.updateOne({ _id: claimed._id, user, processingAt }, { $unset: { processingAt: 1 } });
+        throw err;
+      }
+      rule.nextDate = nextDate;
+      if (claimed.endDate && nextDate > claimed.endDate) break;
+    }
   }
 }
 
-/**
- * Process all due recurring rules for a user.
- * Called on login and in auth middleware (throttled to once per hour).
- * Uses atomic findOneAndUpdate on nextDate to avoid duplicate creation.
- */
-export async function processDueRecurring(userId) {
-  const userObjId = new mongoose.Types.ObjectId(userId);
-  const now = new Date();
-
-  // Find all active rules for this user that are due
-  const dueRules = await RecurringRule.find({
-    user: userObjId,
-    active: true,
-    nextDate: { $lte: now },
-  }).lean();
-
-  for (const rule of dueRules) {
-    let iterations = 0;
-    const maxIterations = 366;
-
-    while (iterations < maxIterations) {
-      // Check if nextDate is still <= now (rule may have been advanced by another process)
-      if (isAfter(rule.nextDate, now)) break;
-      if (rule.endDate && isAfter(rule.nextDate, rule.endDate)) {
-        // Deactivate the rule
-        await RecurringRule.findByIdAndUpdate(rule._id, { active: false });
-        break;
-      }
-
-      const currentNextDate = new Date(rule.nextDate);
-      const advancedDate = advanceDate(currentNextDate, rule.frequency);
-
-      // Atomically claim this occurrence — only proceed if nextDate hasn't changed
-      const claimed = await RecurringRule.findOneAndUpdate(
-        {
-          _id: rule._id,
-          nextDate: currentNextDate, // optimistic lock
-          active: true,
-        },
-        { $set: { nextDate: advancedDate } },
-        { new: true },
-      );
-
-      if (!claimed) {
-        // Another process already handled this occurrence
-        break;
-      }
-
-      // Create the transaction (no recurringRule ref to avoid chaining)
-      await Transaction.create({
-        user: userObjId,
-        account: rule.account,
-        type: rule.type,
-        amount: rule.amount,
-        category: rule.category,
-        note: rule.note || '',
-        date: currentNextDate,
-        // intentionally no `recurringRule` field — prevents recursive rule creation
-      });
-
-      // Update local cursor for next iteration
-      rule.nextDate = advancedDate;
-      iterations++;
-
-      // Check if the new nextDate is past endDate
-      if (rule.endDate && isAfter(advancedDate, rule.endDate)) {
-        await RecurringRule.findByIdAndUpdate(rule._id, { active: false });
-        break;
-      }
-    }
+export async function checkRecurring(userId) {
+  const checkedAt = new Date();
+  const user = await User.findOneAndUpdate({
+    _id: userId,
+    $or: [{ lastRecurringCheck: null }, { lastRecurringCheck: { $lte: new Date(Date.now() - 3600000) } }],
+  }, { $set: { lastRecurringCheck: checkedAt } });
+  if (!user) return;
+  try {
+    await processDueRecurring(userId);
+  } catch (err) {
+    await User.updateOne({ _id: userId, lastRecurringCheck: checkedAt }, { $unset: { lastRecurringCheck: 1 } });
+    throw err;
   }
 }

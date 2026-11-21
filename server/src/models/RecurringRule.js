@@ -25,6 +25,7 @@ const recurringRuleSchema = new mongoose.Schema(
     nextDate: { type: Date, required: true },
     endDate: { type: Date },
     active: { type: Boolean, default: true },
+    processingAt: { type: Date },
   },
   { timestamps: true },
 );
