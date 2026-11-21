@@ -11,6 +11,9 @@ import authRouter from './routes/auth.js';
 import accountsRouter from './routes/accounts.js';
 import categoriesRouter from './routes/categories.js';
 import transactionsRouter from './routes/transactions.js';
+import budgetsRouter from './routes/budgets.js';
+import analyticsRouter from './routes/analytics.js';
+import dashboardRouter from './routes/dashboard.js';
 
 const app = express();
 
@@ -56,6 +59,9 @@ app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/accounts', accountsRouter);
 app.use('/api/v1/categories', categoriesRouter);
 app.use('/api/v1/transactions', transactionsRouter);
+app.use('/api/v1/dashboard', dashboardRouter);
+app.use('/api/v1/budgets', budgetsRouter);
+app.use('/api/v1/analytics', analyticsRouter);
 
 // ── 404 + centralised error handler ───────────────────────────────────────
 app.use(notFound);
