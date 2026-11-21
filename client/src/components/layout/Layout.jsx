@@ -12,7 +12,7 @@ export default function Layout() {
       {/* Main content area */}
       <div className="flex-1 flex flex-col lg:ml-64 min-w-0">
         <TopBar />
-        <main className="flex-1 p-4 lg:p-6 pb-20 lg:pb-6 overflow-x-hidden">
+        <main id="main-content" className="flex-1 p-4 sm:p-6 lg:p-8 pb-24 lg:pb-8 min-w-0">
           <Outlet />
         </main>
       </div>

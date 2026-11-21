@@ -1,5 +1,8 @@
 import api from './client.js';
 
+export const getCapabilities = () => api.get('/health');
+export const updateProfile = (data) => api.patch('/auth/me', data);
+
 export const getDashboard = () => api.get('/dashboard');
 export const getAnalytics = (range) => api.get('/analytics', { params: { range } });
 
