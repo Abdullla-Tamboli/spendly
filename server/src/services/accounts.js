@@ -1,6 +1,7 @@
 import Account from '../models/Account.js';
 import Transaction from '../models/Transaction.js';
 import AppError from '../utils/AppError.js';
+import RecurringRule from '../models/RecurringRule.js';
 
 /** Compute balance for every account owned by userId via aggregation */
 async function computeBalances(userId) {
@@ -71,5 +72,8 @@ export async function deleteAccount(userId, accountId) {
     );
   }
 
-  await account.deleteOne();
+  if (await RecurringRule.exists({ user: userId, account: accountId })) {
+    throw new AppError('Remove recurring rules using this account first', 409, 'ACCOUNT_HAS_RECURRING');
+  }
+  await Account.deleteOne({ _id: accountId, user: userId });
 }

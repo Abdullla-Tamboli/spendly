@@ -12,7 +12,7 @@ const router = Router();
 
 router.use(authenticate);
 
-router.get('/', list);
+router.get('/', validate(), list);
 router.post('/', validate({ body: createAccountSchema }), create);
 router.put('/:id', validate({ body: updateAccountSchema, params: idParamSchema }), update);
 router.delete('/:id', validate({ params: idParamSchema }), remove);

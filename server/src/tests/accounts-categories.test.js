@@ -150,6 +150,17 @@ describe('Accounts', () => {
 // ── Categories ─────────────────────────────────────────────────────────────
 
 describe('Categories', () => {
+  it('treats category regex characters literally and preserves references after rename', async () => {
+    const { token } = await registerAndLogin();
+    const created = await request(app).post('/api/v1/categories').set(auth(token)).send({ name: 'Coffee (work)', type: 'expense' });
+    const accounts = await request(app).get('/api/v1/accounts').set(auth(token));
+    const payload = { account: accounts.body.data.accounts[0]._id, type: 'expense', amount: 10, category: 'Coffee (work)' };
+    expect((await request(app).post('/api/v1/transactions').set(auth(token)).send(payload)).status).toBe(201);
+    expect((await request(app).post('/api/v1/transactions').set(auth(token)).send({ ...payload, category: '.*' })).status).toBe(400);
+    await request(app).put(`/api/v1/categories/${created.body.data.category._id}`).set(auth(token)).send({ name: 'Work coffee' });
+    const list = await request(app).get('/api/v1/transactions').set(auth(token));
+    expect(list.body.data[0].category).toBe('Work coffee');
+  });
   it('GET /categories returns default + custom categories', async () => {
     const { token } = await registerAndLogin();
     const res = await request(app).get('/api/v1/categories').set(auth(token));
