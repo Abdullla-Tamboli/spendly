@@ -10,6 +10,7 @@ import healthRouter from './routes/health.js';
 import authRouter from './routes/auth.js';
 import accountsRouter from './routes/accounts.js';
 import categoriesRouter from './routes/categories.js';
+import transactionsRouter from './routes/transactions.js';
 
 const app = express();
 
@@ -54,6 +55,7 @@ app.use('/api/v1/health', healthRouter);
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/accounts', accountsRouter);
 app.use('/api/v1/categories', categoriesRouter);
+app.use('/api/v1/transactions', transactionsRouter);
 
 // ── 404 + centralised error handler ───────────────────────────────────────
 app.use(notFound);
