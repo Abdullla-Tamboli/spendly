@@ -28,10 +28,12 @@ export default function Transactions() {
   const [deleting, setDeleting] = useState(null);
   const [expanded, setExpanded] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [search, setSearch] = useState(params.search || '');
+  const [draftSearch, setDraftSearch] = useState({ value: params.search || '', source: params.search || '' });
+  const search = draftSearch.source === (params.search || '') ? draftSearch.value : params.search || '';
+  const setSearch = (value) => setDraftSearch({ value, source: params.search || '' });
   const searchTimer = useRef(null);
   const toast = useToast();
-  useEffect(() => { setSearch(params.search || ''); clearTimeout(searchTimer.current); }, [params.search]);
+  useEffect(() => { clearTimeout(searchTimer.current); }, [params.search]);
   useEffect(() => () => clearTimeout(searchTimer.current), []);
   const setFilter = useCallback((key, value) => {
     setQuery((previous) => { const next = new URLSearchParams(previous); if (value) next.set(key, value); else next.delete(key); if (key !== 'page') next.delete('page'); return next; });

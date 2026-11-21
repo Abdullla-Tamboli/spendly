@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Plus, Repeat2, Paperclip } from 'lucide-react';
@@ -22,18 +22,18 @@ const schema = z.object({
   frequency: z.enum(['daily', 'weekly', 'monthly', 'yearly']),
   endDate: z.string(),
 }).refine((v) => !v.recurringEnabled || !v.endDate || v.endDate >= v.date, { message: 'End date must be on or after the transaction date', path: ['endDate'] });
-export default function TransactionForm({ initial, accounts, categories, attachmentsEnabled = false, onSubmit, onCancel }) {
+export default function TransactionForm({ initial, accounts, categories, attachmentsEnabled = false, recurringDefault = false, onSubmit, onCancel }) {
   const toast = useToast();
   const [custom, setCustom] = useState([]);
   const [creating, setCreating] = useState(false);
   const [categoryName, setCategoryName] = useState('');
   const [categoryBusy, setCategoryBusy] = useState(false);
   const [file, setFile] = useState(null);
-  const { register, watch, setValue, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm({ resolver: zodResolver(schema), defaultValues: {
-    type: initial?.type || 'expense', amount: initial?.amount || '', category: initial?.category || '', account: initial?.account?._id || initial?.account || accounts[0]?._id || '', date: initial ? initial.date.slice(0, 10) : toInputDate(new Date()), note: initial?.note || '', recurringEnabled: false, frequency: 'monthly', endDate: '',
+  const { register, control, setValue, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm({ resolver: zodResolver(schema), defaultValues: {
+    type: initial?.type || 'expense', amount: initial?.amount || '', category: initial?.category || '', account: initial?.account?._id || initial?.account || accounts[0]?._id || '', date: initial ? initial.date.slice(0, 10) : toInputDate(new Date()), note: initial?.note || '', recurringEnabled: recurringDefault, frequency: 'monthly', endDate: '',
   } });
-  const type = watch('type');
-  const recurring = watch('recurringEnabled');
+  const type = useWatch({ control, name: 'type' });
+  const recurring = useWatch({ control, name: 'recurringEnabled' });
   const options = [...categories, ...custom].filter((c) => c.type === type);
   const changeType = (next) => { setValue('type', next); setValue('category', ''); };
   const addCategory = async () => {

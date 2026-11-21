@@ -5,13 +5,13 @@ export default function useResource(loader) {
   const [state, setState] = useState({ data: null, pagination: null, loading: true, error: null });
   useEffect(() => {
     let active = true;
-    setState({ data: null, pagination: null, loading: true, error: null });
     Promise.resolve().then(loader).then((res) => {
-      if (active) setState({ data: res.data.data, pagination: res.data.pagination || null, loading: false, error: null });
+      if (active) setState({ loader, version, data: res.data.data, pagination: res.data.pagination || null, loading: false, error: null });
     }).catch((error) => {
-      if (active) setState({ data: null, pagination: null, loading: false, error: errorMessage(error) });
+      if (active) setState({ loader, version, data: null, pagination: null, loading: false, error: errorMessage(error) });
     });
     return () => { active = false; };
   }, [loader, version]);
-  return { ...state, refetch };
+  const current = state.loader === loader && state.version === version;
+  return { ...(current ? state : { data: null, pagination: null, loading: true, error: null }), refetch };
 }

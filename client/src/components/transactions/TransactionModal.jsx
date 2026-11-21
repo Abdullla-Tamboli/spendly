@@ -12,7 +12,7 @@ const load = async () => {
   const [accounts, categories, capabilities] = await Promise.all([listAccounts(), listCategories(), getCapabilities()]);
   return { data: { data: { accounts: accounts.data.data.accounts, categories: categories.data.data.categories, attachmentsEnabled: capabilities.data.data.attachmentsEnabled } } };
 };
-export default function TransactionModal({ transaction, onClose, onSaved }) {
+export default function TransactionModal({ transaction, recurringDefault, onClose, onSaved }) {
   const resource = useResource(load);
   const toast = useToast();
   const [busy, setBusy] = useState(false);
@@ -29,6 +29,6 @@ export default function TransactionModal({ transaction, onClose, onSaved }) {
     } finally { setBusy(false); }
   };
   return <Modal open title={transaction ? 'Edit transaction' : 'Add a transaction'} onClose={onClose} busy={busy}>
-    {resource.loading ? <PageSkeleton /> : resource.error ? <ErrorState message={resource.error} onRetry={resource.refetch} /> : !resource.data.accounts.length ? <p className="muted">You need an account first. <Link to="/accounts" className="text-primary font-medium">Create an account</Link></p> : <TransactionForm initial={transaction} {...resource.data} onSubmit={save} onCancel={onClose} />}
+    {resource.loading ? <PageSkeleton /> : resource.error ? <ErrorState message={resource.error} onRetry={resource.refetch} /> : !resource.data.accounts.length ? <p className="muted">You need an account first. <Link to="/accounts" className="text-primary font-medium">Create an account</Link></p> : <TransactionForm initial={transaction} recurringDefault={recurringDefault} {...resource.data} onSubmit={save} onCancel={onClose} />}
   </Modal>;
 }
