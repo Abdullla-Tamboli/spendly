@@ -7,6 +7,7 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { notFound } from './middleware/notFound.js';
 import { apiLimiter } from './middleware/rateLimiters.js';
 import healthRouter from './routes/health.js';
+import authRouter from './routes/auth.js';
 
 const app = express();
 
@@ -48,6 +49,7 @@ app.use('/api/', apiLimiter);
 
 // ── Routes ─────────────────────────────────────────────────────────────────
 app.use('/api/v1/health', healthRouter);
+app.use('/api/v1/auth', authRouter);
 
 // ── 404 + centralised error handler ───────────────────────────────────────
 app.use(notFound);
