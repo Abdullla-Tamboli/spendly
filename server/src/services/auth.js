@@ -9,7 +9,7 @@ const SALT_ROUNDS = 12;
 
 // A fixed dummy hash used to ensure constant-time comparison when user is not found.
 // bcrypt.compare will still run to completion, preventing timing attacks.
-const DUMMY_HASH = '$2a$12$aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const DUMMY_HASH = bcrypt.hashSync('spendly-invalid-password', SALT_ROUNDS);
 
 function signToken(userId) {
   return jwt.sign({ sub: userId }, env.JWT_SECRET, { expiresIn: env.JWT_EXPIRES_IN });
@@ -62,6 +62,12 @@ export async function loginUser({ email, password }) {
 
 export async function getMe(userId) {
   const user = await User.findById(userId);
+  if (!user) throw new AppError('User not found', 404, 'NOT_FOUND');
+  return sanitizeUser(user);
+}
+
+export async function updateProfile(userId, { name, currency }) {
+  const user = await User.findByIdAndUpdate(userId, { $set: { name, currency } }, { new: true, runValidators: true });
   if (!user) throw new AppError('User not found', 404, 'NOT_FOUND');
   return sanitizeUser(user);
 }

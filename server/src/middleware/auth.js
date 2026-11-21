@@ -25,6 +25,9 @@ export async function authenticate(req, _res, next) {
       return next(new AppError('Invalid token', 401, 'INVALID_TOKEN'));
     }
 
+    if (typeof payload.sub !== 'string' || !/^[a-f\d]{24}$/i.test(payload.sub)) {
+      return next(new AppError('Invalid token', 401, 'INVALID_TOKEN'));
+    }
     const user = await User.findById(payload.sub);
     if (!user) {
       return next(new AppError('Invalid token', 401, 'INVALID_TOKEN'));

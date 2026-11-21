@@ -41,6 +41,19 @@ async function registerAndLogin(overrides = {}) {
 // ── Register ───────────────────────────────────────────────────────────────
 
 describe('POST /api/v1/auth/register', () => {
+  it('rejects extra fields on an otherwise valid registration', async () => {
+    const { res } = await registerAndLogin({ admin: true });
+    expect(res.status).toBe(400);
+  });
+  it('updates only the authenticated profile and currency', async () => {
+    const { token } = await registerAndLogin();
+    const res = await request(app).patch('/api/v1/auth/me').set('Authorization', `Bearer ${token}`).send({ name: 'Updated User', currency: 'INR' });
+    expect(res.status).toBe(200);
+    expect(res.body.data.user.currency).toBe('INR');
+    expect(res.body.data.user.passwordHash).toBeUndefined();
+    const invalid = jwt.sign({ sub: 'invalid' }, env.JWT_SECRET);
+    expect((await request(app).get('/api/v1/auth/me').set('Authorization', `Bearer ${invalid}`)).body.error.code).toBe('INVALID_TOKEN');
+  });
   it('succeeds and returns token + user (no password/hash)', async () => {
     const { res } = await registerAndLogin();
     expect(res.status).toBe(201);

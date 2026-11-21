@@ -20,3 +20,8 @@ export const logout = asyncHandler(async (_req, res) => {
   // JWT is stateless; client discards the token.
   res.json({ success: true, data: { message: 'Logged out successfully' } });
 });
+
+export const updateProfile = asyncHandler(async (req, res) => {
+  const user = await authService.updateProfile(req.user._id, req.body);
+  res.json({ success: true, data: { user } });
+});
