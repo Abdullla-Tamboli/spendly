@@ -14,6 +14,8 @@ import transactionsRouter from './routes/transactions.js';
 import budgetsRouter from './routes/budgets.js';
 import analyticsRouter from './routes/analytics.js';
 import dashboardRouter from './routes/dashboard.js';
+import goalsRouter from './routes/goals.js';
+import recurringRouter from './routes/recurring.js';
 
 const app = express();
 
@@ -62,6 +64,8 @@ app.use('/api/v1/transactions', transactionsRouter);
 app.use('/api/v1/dashboard', dashboardRouter);
 app.use('/api/v1/budgets', budgetsRouter);
 app.use('/api/v1/analytics', analyticsRouter);
+app.use('/api/v1/goals', goalsRouter);
+app.use('/api/v1/recurring', recurringRouter);
 
 // ── 404 + centralised error handler ───────────────────────────────────────
 app.use(notFound);

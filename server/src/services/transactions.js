@@ -1,9 +1,26 @@
 import mongoose from 'mongoose';
+import { addDays, addWeeks, addMonths, addYears } from 'date-fns';
 import Transaction from '../models/Transaction.js';
 import Account from '../models/Account.js';
+import RecurringRule from '../models/RecurringRule.js';
 import AppError from '../utils/AppError.js';
 import { escapeRegex } from '../utils/escapeRegex.js';
 import { validateCategory } from './categories.js';
+
+function nextOccurrence(fromDate, frequency) {
+  switch (frequency) {
+    case 'daily':
+      return addDays(fromDate, 1);
+    case 'weekly':
+      return addWeeks(fromDate, 1);
+    case 'monthly':
+      return addMonths(fromDate, 1);
+    case 'yearly':
+      return addYears(fromDate, 1);
+    default:
+      return addMonths(fromDate, 1);
+  }
+}
 
 const SORT_MAP = {
   date_desc: { date: -1 },
@@ -130,10 +147,24 @@ export async function createTransaction(userId, body) {
     date: date ?? new Date(),
   });
 
-  // Recurring rule creation delegated to Milestone 7
-  // If recurring.enabled, the recurringService will handle it after M7 wiring
-  if (recurring?.enabled) {
-    // Will be called from the route after M7; no-op for now
+  // If recurring enabled, create a RecurringRule with nextDate = next occurrence after tx date
+  if (recurring?.enabled && recurring.frequency) {
+    const txDate = tx.date;
+    const nextDate = nextOccurrence(txDate, recurring.frequency);
+    const rule = await RecurringRule.create({
+      user: userId,
+      account,
+      type,
+      amount,
+      category,
+      note: note ?? '',
+      frequency: recurring.frequency,
+      nextDate,
+      endDate: recurring.endDate ?? undefined,
+      active: true,
+    });
+    // Link the rule back to the transaction
+    await Transaction.findByIdAndUpdate(tx._id, { recurringRule: rule._id });
   }
 
   return Transaction.findById(tx._id).populate('account', '_id name type').lean();
