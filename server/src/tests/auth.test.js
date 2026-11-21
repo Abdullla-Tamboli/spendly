@@ -176,7 +176,7 @@ describe('GET /api/v1/auth/me (protected)', () => {
 
 describe('POST /api/v1/auth/logout', () => {
   it('acknowledges logout for authenticated user', async () => {
-    const { token } = await registerAndLogin();
+    const { token } = await registerAndLogin({ email: 'logout@example.com' });
     const res = await request(app)
       .post('/api/v1/auth/logout')
       .set('Authorization', `Bearer ${token}`);
