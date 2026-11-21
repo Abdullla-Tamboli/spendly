@@ -2,6 +2,7 @@ import request from 'supertest';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 import app from '../app.js';
+import { computeBudgetLevel } from '../services/budgets.js';
 
 let mongod;
 
@@ -61,6 +62,19 @@ async function createTx(token, cashId, overrides = {}) {
 // BUDGET LEVEL CALCULATION
 // ═══════════════════════════════════════════════════════════════════════════
 describe('Budget level computation', () => {
+  test('does not warn early when rounding below a threshold', () => {
+    expect(computeBudgetLevel(49.99, 100, 'July').level).toBe('ok');
+    expect(computeBudgetLevel(99.99, 100, 'July').level).toBe('danger');
+  });
+  test('uses UTC month boundaries and rejects invalid category budgets', async () => {
+    const { token, cashId } = await setup();
+    await createTx(token, cashId, { date: '2026-07-31T23:59:59.000Z', amount: 17 });
+    await createTx(token, cashId, { date: '2026-08-01T00:00:00.000Z', amount: 23 });
+    const res = await request(app).get('/api/v1/budgets?month=2026-07').set(auth(token));
+    expect(res.body.data.spent).toBe(17);
+    expect((await request(app).get('/api/v1/budgets?month=2026-13').set(auth(token))).status).toBe(400);
+    expect((await request(app).put('/api/v1/budgets/2026-07').set(auth(token)).send({ overall: 100, categories: [{ category: 'Unknown', amount: 10 }] })).status).toBe(400);
+  });
   async function setOverallBudget(tk, amount, month) {
     return request(app)
       .put(`/api/v1/budgets/${month}`)

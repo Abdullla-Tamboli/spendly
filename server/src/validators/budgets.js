@@ -1,26 +1,8 @@
 import { z } from 'zod';
-
-const monthRegex = /^\d{4}-\d{2}$/;
-
-export const upsertBudgetSchema = z
-  .object({
-    overall: z.coerce.number().positive(),
-    categories: z
-      .array(
-        z.object({
-          category: z.string().trim().min(1).max(50),
-          amount: z.coerce.number().positive(),
-        }),
-      )
-      .optional()
-      .default([]),
-  })
-  .strict();
-
-export const monthParamSchema = z.object({
-  month: z.string().regex(monthRegex, 'month must be in YYYY-MM format'),
-});
-
-export const monthQuerySchema = z.object({
-  month: z.string().regex(monthRegex, 'month must be in YYYY-MM format').optional(),
-});
+import { month, positiveMoney } from './common.js';
+export const upsertBudgetSchema = z.object({
+  overall: positiveMoney,
+  categories: z.array(z.object({ category: z.string().trim().min(1).max(30), amount: positiveMoney }).strict()).max(100).default([]),
+}).strict().refine((v) => new Set(v.categories.map((c) => c.category.toLowerCase())).size === v.categories.length, 'Each category may only appear once');
+export const monthParamSchema = z.object({ month }).strict();
+export const monthQuerySchema = z.object({ month: month.optional() }).strict();

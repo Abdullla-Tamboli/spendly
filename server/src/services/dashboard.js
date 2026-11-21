@@ -1,12 +1,12 @@
 import mongoose from 'mongoose';
-import { startOfMonth, subMonths, format } from 'date-fns';
+import { monthStart, monthKey } from '../utils/dates.js';
 import Transaction from '../models/Transaction.js';
 import { getBudget } from './budgets.js';
 
 export async function getDashboard(userId) {
   const userObjId = new mongoose.Types.ObjectId(userId);
   const now = new Date();
-  const currentMonth = format(now, 'yyyy-MM');
+  const currentMonth = monthKey(now);
 
   // --- All-time totals ---
   const totalsAgg = await Transaction.aggregate([
@@ -23,16 +23,16 @@ export async function getDashboard(userId) {
   const budget = await getBudget(userId, currentMonth);
 
   // --- Recent transactions (latest 8) ---
-  const recentTransactions = await Transaction.find({ user: userId })
-    .sort({ date: -1 })
-    .limit(8)
-    .populate('account', '_id name type')
-    .lean();
+  const recentTransactions = await Transaction.aggregate([
+    { $match: { user: userObjId } }, { $sort: { date: -1, _id: -1 } }, { $limit: 8 },
+    { $lookup: { from: 'accounts', localField: 'account', foreignField: '_id', pipeline: [{ $match: { user: userObjId } }, { $project: { name: 1, type: 1 } }], as: 'account' } },
+    { $unwind: { path: '$account', preserveNullAndEmptyArrays: true } },
+  ]);
 
   // --- Overview chart: income vs expense for last 6 months ---
-  const sixMonthsAgo = startOfMonth(subMonths(now, 5));
+  const sixMonthsAgo = monthStart(now, -5);
   const overviewAgg = await Transaction.aggregate([
-    { $match: { user: userObjId, date: { $gte: sixMonthsAgo } } },
+    { $match: { user: userObjId, date: { $gte: sixMonthsAgo, $lt: monthStart(now, 1) } } },
     {
       $group: {
         _id: {
@@ -46,7 +46,7 @@ export async function getDashboard(userId) {
 
   // Build 6-month bucket array
   const months = Array.from({ length: 6 }, (_, i) =>
-    format(startOfMonth(subMonths(now, 5 - i)), 'yyyy-MM'),
+    monthKey(monthStart(now, i - 5)),
   );
   const incomeMap = {};
   const expenseMap = {};
