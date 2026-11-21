@@ -1,11 +1,13 @@
 import AppError from '../utils/AppError.js';
+import { z } from 'zod';
 
 /**
  * Validates req.body, req.query, and req.params against Zod schemas.
  * Replaces the original objects with the parsed (safe) output.
  * Usage: validate({ body: schema, query: schema, params: schema })
  */
-export function validate(schemas) {
+export function validate(schemas = {}) {
+  schemas = { body: z.object({}).strict(), query: z.object({}).strict(), params: z.object({}).strict(), ...schemas };
   return (req, _res, next) => {
     try {
       if (schemas.body) {

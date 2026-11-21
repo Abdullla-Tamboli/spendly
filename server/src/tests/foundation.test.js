@@ -1,20 +1,5 @@
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import mongoose from 'mongoose';
 import request from 'supertest';
 import app from '../app.js';
-
-let mongod;
-
-beforeAll(async () => {
-  mongod = await MongoMemoryServer.create();
-  const uri = mongod.getUri();
-  await mongoose.connect(uri);
-});
-
-afterAll(async () => {
-  await mongoose.disconnect();
-  await mongod.stop();
-});
 
 describe('GET /api/v1/health', () => {
   it('returns 200 with status ok', async () => {
@@ -28,6 +13,12 @@ describe('GET /api/v1/health', () => {
 });
 
 describe('Unknown route', () => {
+  it('rejects malformed JSON and unexpected query fields', async () => {
+    const malformed = await request(app).post('/api/v1/auth/login').set('Content-Type', 'application/json').send('{');
+    expect(malformed.status).toBe(400);
+    expect(malformed.body.error.code).toBe('INVALID_JSON');
+    expect((await request(app).get('/api/v1/health?unexpected=yes')).status).toBe(400);
+  });
   it('returns 404 with standard error shape', async () => {
     const res = await request(app).get('/api/v1/does-not-exist');
     expect(res.status).toBe(404);

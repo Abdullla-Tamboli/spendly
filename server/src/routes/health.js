@@ -1,8 +1,9 @@
 import { Router } from 'express';
+import { validate } from '../middleware/validate.js';
 
 const router = Router();
 
-router.get('/', (_req, res) => {
+router.get('/', validate(), (_req, res) => {
   res.json({
     success: true,
     data: {

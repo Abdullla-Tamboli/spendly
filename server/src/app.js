@@ -16,12 +16,14 @@ import analyticsRouter from './routes/analytics.js';
 import dashboardRouter from './routes/dashboard.js';
 import goalsRouter from './routes/goals.js';
 import recurringRouter from './routes/recurring.js';
+import AppError from './utils/AppError.js';
 
 const app = express();
 
 // ── Security headers ───────────────────────────────────────────────────────
 app.use(helmet());
 app.disable('x-powered-by');
+app.set('trust proxy', 1);
 
 // ── CORS ───────────────────────────────────────────────────────────────────
 const allowedOrigins = env.CLIENT_ORIGIN.split(',').map((o) => o.trim());
@@ -34,7 +36,7 @@ app.use(
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        callback(new Error('Not allowed by CORS'));
+        callback(new AppError('Not allowed by CORS', 403, 'CORS_DENIED'));
       }
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
