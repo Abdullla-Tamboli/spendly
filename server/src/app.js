@@ -31,9 +31,10 @@ const allowedOrigins = env.CLIENT_ORIGIN.split(',').map((o) => o.trim());
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (e.g. server-to-server, curl in tests)
-      // but block browser requests from unlisted origins.
-      if (!origin || allowedOrigins.includes(origin)) {
+      // Allow requests with no origin (e.g. server-to-server, curl in tests),
+      // explicit allowed origins, and Vercel preview/production deployments
+      const isVercel = origin && origin.startsWith('https://') && origin.endsWith('.vercel.app');
+      if (!origin || allowedOrigins.includes(origin) || isVercel) {
         callback(null, true);
       } else {
         callback(new AppError('Not allowed by CORS', 403, 'CORS_DENIED'));

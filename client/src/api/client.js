@@ -1,7 +1,11 @@
 import axios from 'axios';
 
+const defaultBaseURL = import.meta.env.PROD
+  ? 'https://spendly-axn5.onrender.com/api/v1'
+  : 'http://localhost:5000/api/v1';
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1',
+  baseURL: import.meta.env.VITE_API_URL || defaultBaseURL,
 });
 
 // Attach token to every request
