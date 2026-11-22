@@ -237,7 +237,12 @@ VITE_API_URL=https://spendly-axn5.onrender.com/api/v1
 #### Setting up Cloudinary (Optional):
 1. Sign up at [cloudinary.com](https://cloudinary.com/).
 2. On your Dashboard, copy the **Cloud Name**, **API Key**, and **API Secret** into `server/.env`.
-3. If omitted, receipt attachment buttons are automatically hidden and the server responds with a clear `501 Not Implemented`.
+3. **Important for PDF Receipts:** By default, new Cloudinary accounts restrict PDF delivery (returning `401: deny or ACL failure`). To enable PDF receipts:
+   - Go to **Settings (⚙️)** > **Security**.
+   - Scroll down to **"Restricted media types"**.
+   - **Uncheck** "PDF and ZIP files delivery" (or toggle "Allow delivery of PDF and ZIP files").
+   - Click **Save**.
+4. If Cloudinary credentials are omitted, receipt attachment buttons are automatically hidden and the server responds with a clear `501 Not Implemented`.
 
 ---
 
@@ -481,7 +486,15 @@ Ensure your exact frontend URL (e.g. `https://client-two-omega-68.vercel.app`) i
 - Ensure you created an **App Password** (16 characters) and did not use your normal Gmail login password.
 - Confirm `EMAIL_USER` and `EMAIL_APP_PASSWORD` are correctly set in `server/.env` (or Render environment variables).
 
-#### 4. How do I reset or clear the local database?
+#### 4. Why does opening an attached PDF receipt show `401: deny or ACL failure`?
+Cloudinary blocks direct delivery of PDF files by default on newly created accounts. To fix this:
+1. Log in to [Cloudinary Console](https://console.cloudinary.com/).
+2. Click the **Gear icon (⚙️ Settings)** in the sidebar or top bar.
+3. Navigate to the **Security** tab.
+4. Scroll down to **"Restricted media types"** and **uncheck** "PDF and ZIP files delivery" (or switch "Allow delivery of PDF and ZIP files" to Allowed).
+5. Click **Save** at the bottom. The PDF will open immediately.
+
+#### 5. How do I reset or clear the local database?
 You can delete test documents in MongoDB Atlas or re-run `npm run seed` in the `server/` directory to re-populate the demo dataset.
 
 ---
