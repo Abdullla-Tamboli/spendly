@@ -6,18 +6,13 @@ export const register = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, data: result });
 });
 
+export const sendRegistrationOtp = asyncHandler(async (req, res) => {
+  const result = await authService.sendRegistrationOtp(req.body.email);
+  res.json({ success: true, data: result });
+});
+
 export const login = asyncHandler(async (req, res) => {
   const result = await authService.loginUser(req.body);
-  res.json({ success: true, data: result });
-});
-
-export const sendOtp = asyncHandler(async (req, res) => {
-  const result = await authService.sendLoginOtp(req.body.email);
-  res.json({ success: true, data: result });
-});
-
-export const verifyOtp = asyncHandler(async (req, res) => {
-  const result = await authService.verifyLoginOtp(req.body);
   res.json({ success: true, data: result });
 });
 

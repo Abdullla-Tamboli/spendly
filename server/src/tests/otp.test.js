@@ -1,7 +1,9 @@
 import request from 'supertest';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 import app from '../app.js';
+import EmailVerification from '../models/EmailVerification.js';
 import User from '../models/User.js';
 
 let mongod;
@@ -23,105 +25,103 @@ afterEach(async () => {
   }
 });
 
-describe('OTP Authentication', () => {
-  const email = 'otpuser@test.com';
+describe('Registration Email OTP Verification', () => {
+  const email = 'newuser@test.com';
 
-  beforeEach(async () => {
-    await request(app)
-      .post('/api/v1/auth/register')
-      .send({ name: 'OTP User', email, password: 'Password123' });
-  });
-
-  test('POST /auth/send-otp generates an OTP and saves hash on user', async () => {
+  test('POST /auth/send-registration-otp generates and saves verification OTP', async () => {
     const res = await request(app)
-      .post('/api/v1/auth/send-otp')
+      .post('/api/v1/auth/send-registration-otp')
       .send({ email });
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
 
-    const user = await User.findOne({ email }).select('+loginOtpHash +loginOtpExpires');
-    expect(user.loginOtpHash).toBeDefined();
-    expect(user.loginOtpExpires).toBeDefined();
-    expect(user.loginOtpExpires.getTime()).toBeGreaterThan(Date.now());
+    const record = await EmailVerification.findOne({ email });
+    expect(record).toBeDefined();
+    expect(record.otpHash).toBeDefined();
+    expect(record.expiresAt.getTime()).toBeGreaterThan(Date.now());
   });
 
-  test('POST /auth/send-otp with non-existent email returns 200 without leaking', async () => {
-    const res = await request(app)
-      .post('/api/v1/auth/send-otp')
-      .send({ email: 'nonexistent@test.com' });
+  test('POST /auth/send-registration-otp returns 409 if email is already registered', async () => {
+    await User.create({ name: 'Existing', email, passwordHash: 'hash123' });
 
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
+    const res = await request(app)
+      .post('/api/v1/auth/send-registration-otp')
+      .send({ email });
+
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe('DUPLICATE_EMAIL');
   });
 
-  test('POST /auth/verify-otp succeeds with valid OTP and clears OTP hash', async () => {
-    // Send OTP
-    await request(app).post('/api/v1/auth/send-otp').send({ email });
-
-    // In test environment, the generated OTP can be verified by logging or inspecting user hash
-    // We can directly set a known OTP hash on user to test verification
-    const bcrypt = (await import('bcryptjs')).default;
-    const testOtp = '654321';
-    const hash = await bcrypt.hash(testOtp, 10);
-    await User.findOneAndUpdate(
-      { email },
-      { loginOtpHash: hash, loginOtpExpires: new Date(Date.now() + 60000) },
-    );
+  test('POST /auth/register succeeds with valid OTP and removes verification record', async () => {
+    const testOtp = '123456';
+    const otpHash = await bcrypt.hash(testOtp, 10);
+    await EmailVerification.create({
+      email,
+      otpHash,
+      expiresAt: new Date(Date.now() + 60000),
+    });
 
     const res = await request(app)
-      .post('/api/v1/auth/verify-otp')
-      .send({ email, otp: testOtp });
+      .post('/api/v1/auth/register')
+      .send({
+        name: 'Verified User',
+        email,
+        password: 'Password123',
+        otp: testOtp,
+      });
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
     expect(res.body.data.token).toBeDefined();
     expect(res.body.data.user.email).toBe(email);
 
-    // Verify OTP was cleared
-    const user = await User.findOne({ email }).select('+loginOtpHash +loginOtpExpires');
-    expect(user.loginOtpHash).toBeUndefined();
+    // Verify OTP record was cleaned up
+    const record = await EmailVerification.findOne({ email });
+    expect(record).toBeNull();
   });
 
-  test('POST /auth/verify-otp fails with incorrect OTP', async () => {
-    const bcrypt = (await import('bcryptjs')).default;
-    const testOtp = '112233';
-    const hash = await bcrypt.hash(testOtp, 10);
-    await User.findOneAndUpdate(
-      { email },
-      { loginOtpHash: hash, loginOtpExpires: new Date(Date.now() + 60000) },
-    );
+  test('POST /auth/register fails with incorrect OTP', async () => {
+    const testOtp = '123456';
+    const otpHash = await bcrypt.hash(testOtp, 10);
+    await EmailVerification.create({
+      email,
+      otpHash,
+      expiresAt: new Date(Date.now() + 60000),
+    });
 
     const res = await request(app)
-      .post('/api/v1/auth/verify-otp')
-      .send({ email, otp: '999999' });
+      .post('/api/v1/auth/register')
+      .send({
+        name: 'Invalid User',
+        email,
+        password: 'Password123',
+        otp: '999999',
+      });
 
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('INVALID_OTP');
   });
 
-  test('POST /auth/verify-otp fails with expired OTP', async () => {
-    const bcrypt = (await import('bcryptjs')).default;
-    const testOtp = '112233';
-    const hash = await bcrypt.hash(testOtp, 10);
-    await User.findOneAndUpdate(
-      { email },
-      { loginOtpHash: hash, loginOtpExpires: new Date(Date.now() - 1000) }, // in the past
-    );
+  test('POST /auth/register fails with expired OTP', async () => {
+    const testOtp = '123456';
+    const otpHash = await bcrypt.hash(testOtp, 10);
+    await EmailVerification.create({
+      email,
+      otpHash,
+      expiresAt: new Date(Date.now() - 1000), // in the past
+    });
 
     const res = await request(app)
-      .post('/api/v1/auth/verify-otp')
-      .send({ email, otp: testOtp });
-
-    expect(res.status).toBe(401);
-    expect(res.body.error.code).toBe('EXPIRED_OTP');
-  });
-
-  test('POST /auth/verify-otp rejects invalid OTP format (non-numeric or not 6 digits)', async () => {
-    const res = await request(app)
-      .post('/api/v1/auth/verify-otp')
-      .send({ email, otp: 'abc' });
+      .post('/api/v1/auth/register')
+      .send({
+        name: 'Expired User',
+        email,
+        password: 'Password123',
+        otp: testOtp,
+      });
 
     expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('INVALID_OTP');
   });
 });

@@ -34,15 +34,15 @@ export async function sendOtpEmail(to, otp) {
       <div style="margin-bottom: 24px;">
         <h1 style="color: #1E4FD6; font-size: 24px; font-weight: 700; margin: 0; letter-spacing: -0.5px;">Spendly</h1>
       </div>
-      <h2 style="color: #101828; font-size: 18px; font-weight: 600; margin: 0 0 12px 0;">Your One-Time Login Code</h2>
+      <h2 style="color: #101828; font-size: 18px; font-weight: 600; margin: 0 0 12px 0;">Verify your email address</h2>
       <p style="color: #475467; font-size: 14px; line-height: 20px; margin: 0 0 24px 0;">
-        Use the verification code below to sign in to your Spendly account. This code is valid for 10 minutes.
+        Welcome to Spendly! Use the verification code below to verify your email and finish creating your account. This code is valid for 10 minutes.
       </p>
       <div style="background: #F6F7F9; border: 1px solid #E4E7EC; border-radius: 8px; padding: 18px; text-align: center; margin-bottom: 24px;">
         <span style="font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #1E4FD6; font-family: monospace;">${otp}</span>
       </div>
       <p style="color: #98A2B3; font-size: 12px; line-height: 18px; margin: 0;">
-        If you did not request this code, you can safely ignore this email. Never share this code with anyone.
+        If you did not try to create a Spendly account, you can safely ignore this email. Never share this code with anyone.
       </p>
     </div>
   `;
@@ -50,8 +50,8 @@ export async function sendOtpEmail(to, otp) {
   return mailer.sendMail({
     from: `"Spendly" <${env.EMAIL_USER}>`,
     to,
-    subject: `Your Spendly Login Code: ${otp}`,
-    text: `Your Spendly login code is: ${otp}. It expires in 10 minutes.`,
+    subject: `Verify your email for Spendly: ${otp}`,
+    text: `Your Spendly registration verification code is: ${otp}. It expires in 10 minutes.`,
     html,
   });
 }

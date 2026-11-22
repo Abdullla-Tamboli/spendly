@@ -79,14 +79,6 @@ export function AuthProvider({ children }) {
     return user;
   }, []);
 
-  const loginWithOtp = useCallback(async ({ email, otp }) => {
-    const res = await authApi.verifyOtp({ email, otp });
-    const { token, user } = res.data.data;
-    localStorage.setItem(TOKEN_KEY, token);
-    dispatch({ type: 'SET_USER', user, token });
-    return user;
-  }, []);
-
   const register = useCallback(async (data) => {
     const res = await authApi.register(data);
     const { token, user } = res.data.data;
@@ -106,7 +98,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ ...state, login, loginWithOtp, register, logout, updateUser: (user) => dispatch({ type: 'SET_USER', user, token: state.token }) }}>
+    <AuthContext.Provider value={{ ...state, login, register, logout, updateUser: (user) => dispatch({ type: 'SET_USER', user, token: state.token }) }}>
       {children}
     </AuthContext.Provider>
   );

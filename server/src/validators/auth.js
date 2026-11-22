@@ -9,20 +9,16 @@ export const registerSchema = z.object({
     .max(72, 'Password must be at most 72 characters')
     .regex(/[a-zA-Z]/, 'Password must contain at least one letter')
     .regex(/[0-9]/, 'Password must contain at least one number'),
+  otp: z.string().trim().length(6, 'Verification code must be 6 digits').regex(/^\d{6}$/, 'Verification code must contain digits only').optional(),
+}).strict();
+
+export const sendRegistrationOtpSchema = z.object({
+  email: z.string().trim().toLowerCase().email('Invalid email address').max(254),
 }).strict();
 
 export const loginSchema = z.object({
   email: z.string().trim().toLowerCase().email('Invalid email address').max(254),
   password: z.string().min(1, 'Password is required').max(72),
-}).strict();
-
-export const sendOtpSchema = z.object({
-  email: z.string().trim().toLowerCase().email('Invalid email address').max(254),
-}).strict();
-
-export const verifyOtpSchema = z.object({
-  email: z.string().trim().toLowerCase().email('Invalid email address').max(254),
-  otp: z.string().trim().length(6, 'Verification code must be 6 digits').regex(/^\d{6}$/, 'Verification code must contain digits only'),
 }).strict();
 
 export const profileSchema = z.object({
