@@ -26,6 +26,14 @@ const userSchema = new mongoose.Schema(
       default: 'USD',
       trim: true,
     },
+    loginOtpHash: {
+      type: String,
+      select: false,
+    },
+    loginOtpExpires: {
+      type: Date,
+      select: false,
+    },
     lastRecurringCheck: {
       type: Date,
     },

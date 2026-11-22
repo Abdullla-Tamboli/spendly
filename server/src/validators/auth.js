@@ -16,6 +16,15 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Password is required').max(72),
 }).strict();
 
+export const sendOtpSchema = z.object({
+  email: z.string().trim().toLowerCase().email('Invalid email address').max(254),
+}).strict();
+
+export const verifyOtpSchema = z.object({
+  email: z.string().trim().toLowerCase().email('Invalid email address').max(254),
+  otp: z.string().trim().length(6, 'Verification code must be 6 digits').regex(/^\d{6}$/, 'Verification code must contain digits only'),
+}).strict();
+
 export const profileSchema = z.object({
   name: z.string().trim().min(2).max(60),
   currency: z.enum(['USD', 'INR', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY', 'AED']),

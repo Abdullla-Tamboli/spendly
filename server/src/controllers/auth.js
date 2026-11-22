@@ -11,6 +11,16 @@ export const login = asyncHandler(async (req, res) => {
   res.json({ success: true, data: result });
 });
 
+export const sendOtp = asyncHandler(async (req, res) => {
+  const result = await authService.sendLoginOtp(req.body.email);
+  res.json({ success: true, data: result });
+});
+
+export const verifyOtp = asyncHandler(async (req, res) => {
+  const result = await authService.verifyLoginOtp(req.body);
+  res.json({ success: true, data: result });
+});
+
 export const me = asyncHandler(async (req, res) => {
   const user = await authService.getMe(req.user._id);
   res.json({ success: true, data: { user } });
