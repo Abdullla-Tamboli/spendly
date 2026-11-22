@@ -36,6 +36,7 @@ export default function Register() {
 
   const [step, setStep] = useState('details'); // 'details' | 'otp'
   const [formData, setFormData] = useState(null);
+  const [otpValue, setOtpValue] = useState('');
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [otpError, setOtpError] = useState('');
 
@@ -47,10 +48,14 @@ export default function Register() {
   } = useForm({ resolver: zodResolver(schema) });
 
   const {
-    register: registerOtp,
     handleSubmit: handleOtpSubmit,
+    setValue: setFormOtpValue,
+    clearErrors: clearOtpErrors,
     formState: { errors: otpErrors, isSubmitting: isVerifyingOtp },
-  } = useForm({ resolver: zodResolver(otpSchema) });
+  } = useForm({
+    resolver: zodResolver(otpSchema),
+    defaultValues: { otp: '' },
+  });
 
   const onDetailsSubmit = async (data) => {
     setError('root', { message: '' });
@@ -58,6 +63,10 @@ export default function Register() {
     try {
       await authApi.sendRegistrationOtp(data.email);
       setFormData(data);
+      setOtpValue('');
+      setFormOtpValue('otp', '');
+      clearOtpErrors();
+      setOtpError('');
       setStep('otp');
       toast('Verification code sent to your email');
     } catch (err) {
@@ -71,6 +80,9 @@ export default function Register() {
   const onResendCode = async () => {
     if (!formData?.email) return;
     setOtpError('');
+    setOtpValue('');
+    setFormOtpValue('otp', '');
+    clearOtpErrors();
     setIsSendingOtp(true);
     try {
       await authApi.sendRegistrationOtp(formData.email);
@@ -82,10 +94,22 @@ export default function Register() {
     }
   };
 
-  const onFinalSubmit = async ({ otp }) => {
+  const onEditDetails = () => {
+    setStep('details');
+    setOtpValue('');
+    setFormOtpValue('otp', '');
+    clearOtpErrors();
+    setOtpError('');
+  };
+
+  const onFinalSubmit = async () => {
+    if (!otpValue || otpValue.length !== 6) {
+      setOtpError('Verification code must be 6 digits');
+      return;
+    }
     setOtpError('');
     try {
-      await registerUser({ ...formData, otp });
+      await registerUser({ ...formData, otp: otpValue });
       toast('Account created and verified!');
       navigate('/', { replace: true });
     } catch (err) {
@@ -111,7 +135,7 @@ export default function Register() {
 
         {step === 'details' ? (
           /* Step 1: Account Information */
-          <form onSubmit={handleSubmit(onDetailsSubmit)} noValidate className="space-y-4">
+          <form key="step-details-form" onSubmit={handleSubmit(onDetailsSubmit)} noValidate className="space-y-4">
             {errors.root && (
               <div role="alert" className="text-sm text-expense bg-expense-tint rounded-btn px-3 py-2">
                 {errors.root.message}
@@ -119,6 +143,7 @@ export default function Register() {
             )}
 
             <Input
+              id="register-name"
               label="Name"
               type="text"
               autoComplete="name"
@@ -126,6 +151,7 @@ export default function Register() {
               {...register('name')}
             />
             <Input
+              id="register-email"
               label="Email"
               type="email"
               autoComplete="email"
@@ -133,6 +159,7 @@ export default function Register() {
               {...register('email')}
             />
             <Input
+              id="register-password"
               label="Password"
               type="password"
               autoComplete="new-password"
@@ -152,7 +179,7 @@ export default function Register() {
           </form>
         ) : (
           /* Step 2: Email OTP Verification */
-          <form onSubmit={handleOtpSubmit(onFinalSubmit)} noValidate className="space-y-4">
+          <form key="step-otp-form" onSubmit={handleOtpSubmit(onFinalSubmit)} noValidate className="space-y-4">
             {otpError && (
               <div role="alert" className="text-sm text-expense bg-expense-tint rounded-btn px-3 py-2">
                 {otpError}
@@ -168,7 +195,7 @@ export default function Register() {
                 <div className="font-semibold text-text-primary truncate">{formData?.email}</div>
                 <button
                   type="button"
-                  onClick={() => setStep('details')}
+                  onClick={onEditDetails}
                   className="text-primary hover:underline text-xs mt-1.5 inline-flex items-center gap-1 font-medium"
                 >
                   <ArrowLeft size={12} /> Edit details
@@ -177,14 +204,26 @@ export default function Register() {
             </div>
 
             <Input
+              key="otp-code-input"
+              id="register-otp-code"
+              name="spendly_email_otp"
               label="6-Digit Verification Code"
               type="text"
+              inputMode="numeric"
               maxLength={6}
-              placeholder="123456"
-              autoComplete="one-time-code"
+              placeholder="Enter 6-digit OTP"
+              autoComplete="off"
+              data-lpignore="true"
+              data-1p-ignore="true"
+              value={otpValue}
+              onChange={(e) => {
+                const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 6);
+                setOtpValue(digitsOnly);
+                setFormOtpValue('otp', digitsOnly, { shouldValidate: !!otpErrors.otp });
+                if (otpError) setOtpError('');
+              }}
               className="tracking-widest text-center text-xl font-mono py-2.5"
               error={otpErrors.otp?.message}
-              {...registerOtp('otp')}
             />
 
             <Button
